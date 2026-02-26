@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime
 from ai import low_stock_items
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 
 # ---------------- DB CONNECTION ----------------
 def db():
@@ -143,3 +143,4 @@ def transact():
 if __name__ == "__main__":
 
     app.run(host="0.0.0.0", port=10000)
+
