@@ -81,7 +81,7 @@ def index():
         alerts=alerts
     )
 
-# ---------------- ADD ITEM ----------------
+# ---------------- ADD / RECEIVE ITEM ----------------
 @app.route('/add', methods=['POST'])
 def add():
     name = request.form['name']
@@ -94,9 +94,24 @@ def add():
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT OR IGNORE INTO inventory (item_name, quantity) VALUES (?, ?)",
-        (name, qty)
+        "SELECT quantity FROM inventory WHERE item_name = ?",
+        (name,)
     )
+    row = cur.fetchone()
+
+    if row is None:
+        # create new item
+        cur.execute(
+            "INSERT INTO inventory (item_name, quantity) VALUES (?, ?)",
+            (name, qty)
+        )
+    else:
+        # add to existing quantity
+        new_qty = row[0] + qty
+        cur.execute(
+            "UPDATE inventory SET quantity = ? WHERE item_name = ?",
+            (new_qty, name)
+        )
 
     conn.commit()
     conn.close()
@@ -127,7 +142,7 @@ def transact():
         if action == "issue":
             return "❌ Cannot issue item that does not exist."
 
-        # create item on first receive
+        # auto-create on receive
         cur.execute(
             "INSERT INTO inventory (item_name, quantity) VALUES (?, ?)",
             (name, qty)
@@ -147,8 +162,13 @@ def transact():
             (new_qty, name)
         )
 
+    # log transaction
     cur.execute(
-        "INSERT INTO transactions (item_name, action, quantity, person, time) VALUES (?, ?, ?, ?, ?)",
+        """
+        INSERT INTO transactions
+        (item_name, action, quantity, person, time)
+        VALUES (?, ?, ?, ?, ?)
+        """,
         (name, action, qty, person, now)
     )
 
