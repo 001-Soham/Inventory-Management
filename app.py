@@ -35,6 +35,25 @@ def init_db():
 init_db()
 
 
+@app.route('/delete-transactions', methods=['POST'])
+def delete_transactions():
+    ids = request.form.getlist('delete_ids')
+
+    if not ids:
+        return redirect('/')
+
+    conn = db()
+    cur = conn.cursor()
+
+    cur.executemany(
+        "DELETE FROM transactions WHERE id = ?",
+        [(i,) for i in ids]
+    )
+
+    conn.commit()
+    conn.close()
+    return redirect('/')
+
 # ---------------- HOME / DASHBOARD ----------------
 @app.route('/')
 def index():
@@ -136,5 +155,6 @@ def transact():
 if __name__ == "__main__":
 
     app.run(host="0.0.0.0", port=10000)
+
 
 
