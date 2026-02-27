@@ -6,8 +6,12 @@ from ai import low_stock_items
 app = Flask(__name__, template_folder="templates")
 
 # ---------------- DB CONNECTION ----------------
+def db():
+    return sqlite3.connect("inventory.db", check_same_thread=False)
+
+# ---------------- INIT DATABASE ----------------
 def init_db():
-    conn = sqlite3.connect("inventory.db")
+    conn = db()
     cur = conn.cursor()
 
     cur.execute("""
@@ -34,7 +38,7 @@ def init_db():
 
 init_db()
 
-
+# ---------------- DELETE TRANSACTIONS ----------------
 @app.route('/delete-transactions', methods=['POST'])
 def delete_transactions():
     ids = request.form.getlist('delete_ids')
@@ -54,7 +58,7 @@ def delete_transactions():
     conn.close()
     return redirect('/')
 
-# ---------------- HOME / DASHBOARD ----------------
+# ---------------- HOME ----------------
 @app.route('/')
 def index():
     conn = db()
@@ -77,29 +81,33 @@ def index():
         alerts=alerts
     )
 
-# ---------------- ADD NEW ITEM ----------------
+# ---------------- ADD ITEM ----------------
 @app.route('/add', methods=['POST'])
 def add():
     name = request.form['name']
-    cap = int(request.form['capacity'])
+    qty = int(request.form['quantity'])
+
+    if qty <= 0:
+        return "❌ Quantity must be greater than zero."
 
     conn = db()
     cur = conn.cursor()
+
     cur.execute(
-        "INSERT INTO inventory VALUES (NULL, ?, ?, 0, ?)",
-        (name, cap, cap)
+        "INSERT OR IGNORE INTO inventory (item_name, quantity) VALUES (?, ?)",
+        (name, qty)
     )
+
     conn.commit()
     conn.close()
     return redirect('/')
 
-
-# ---------------- RECEIVE / ISSUE ITEM ----------------
+# ---------------- RECEIVE / ISSUE ----------------
 @app.route('/transact', methods=['POST'])
 def transact():
     name = request.form['name']
     qty = int(request.form['quantity'])
-    action = request.form['action']
+    action = request.form['action']   # receive / issue
     person = request.form['person']
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -115,12 +123,11 @@ def transact():
     )
     row = cur.fetchone()
 
-    # 🔹 ITEM DOES NOT EXIST
     if row is None:
         if action == "issue":
             return "❌ Cannot issue item that does not exist."
 
-        # auto-create on receive
+        # create item on first receive
         cur.execute(
             "INSERT INTO inventory (item_name, quantity) VALUES (?, ?)",
             (name, qty)
@@ -140,9 +147,8 @@ def transact():
             (new_qty, name)
         )
 
-    # 🔹 SAVE TRANSACTION
     cur.execute(
-        "INSERT INTO transactions VALUES (NULL, ?, ?, ?, ?, ?)",
+        "INSERT INTO transactions (item_name, action, quantity, person, time) VALUES (?, ?, ?, ?, ?)",
         (name, action, qty, person, now)
     )
 
@@ -150,11 +156,6 @@ def transact():
     conn.close()
     return redirect('/')
 
-
-# ---------------- RUN APP (LAST LINE ONLY) ----------------
+# ---------------- RUN ----------------
 if __name__ == "__main__":
-
     app.run(host="0.0.0.0", port=10000)
-
-
-
