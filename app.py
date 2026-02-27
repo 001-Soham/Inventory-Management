@@ -7,8 +7,10 @@ app = Flask(__name__, template_folder="templates")
 
 # ---------------- DB CONNECTION ----------------
 def db():
-    return sqlite3.connect("inventory.db", check_same_thread=False)
-
+    return sqlite3.connect(
+        "/opt/render/project/src/inventory.db",
+        check_same_thread=False
+    )
 # ---------------- INIT DATABASE ----------------
 def init_db():
     conn = db()
@@ -179,3 +181,4 @@ def transact():
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
