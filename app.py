@@ -1,16 +1,18 @@
 from flask import Flask, render_template, request, redirect
 import sqlite3
 from datetime import datetime
+import os
 from ai import low_stock_items
 
 app = Flask(__name__, template_folder="templates")
 
-# ---------------- DB CONNECTION ----------------
+# ---------------- DATABASE PATH (ONE SOURCE OF TRUTH) ----------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "inventory.db")
+
 def db():
-    return sqlite3.connect(
-        "/opt/render/project/src/inventory.db",
-        check_same_thread=False
-    )
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
+
 # ---------------- INIT DATABASE ----------------
 def init_db():
     conn = db()
@@ -40,26 +42,6 @@ def init_db():
 
 init_db()
 
-# ---------------- DELETE TRANSACTIONS ----------------
-@app.route('/delete-transactions', methods=['POST'])
-def delete_transactions():
-    ids = request.form.getlist('delete_ids')
-
-    if not ids:
-        return redirect('/')
-
-    conn = db()
-    cur = conn.cursor()
-
-    cur.executemany(
-        "DELETE FROM transactions WHERE id = ?",
-        [(i,) for i in ids]
-    )
-
-    conn.commit()
-    conn.close()
-    return redirect('/')
-
 # ---------------- HOME ----------------
 @app.route('/')
 def index():
@@ -83,43 +65,7 @@ def index():
         alerts=alerts
     )
 
-# ---------------- ADD / RECEIVE ITEM ----------------
-@app.route('/add', methods=['POST'])
-def add():
-    name = request.form['name']
-    qty = int(request.form['quantity'])
-
-    if qty <= 0:
-        return "❌ Quantity must be greater than zero."
-
-    conn = db()
-    cur = conn.cursor()
-
-    cur.execute(
-        "SELECT quantity FROM inventory WHERE item_name = ?",
-        (name,)
-    )
-    row = cur.fetchone()
-
-    if row is None:
-        # create new item
-        cur.execute(
-            "INSERT INTO inventory (item_name, quantity) VALUES (?, ?)",
-            (name, qty)
-        )
-    else:
-        # add to existing quantity
-        new_qty = row[0] + qty
-        cur.execute(
-            "UPDATE inventory SET quantity = ? WHERE item_name = ?",
-            (new_qty, name)
-        )
-
-    conn.commit()
-    conn.close()
-    return redirect('/')
-
-# ---------------- RECEIVE / ISSUE ----------------
+# ---------------- RECEIVE / ISSUE ITEM ----------------
 @app.route('/transact', methods=['POST'])
 def transact():
     name = request.form['name']
@@ -134,17 +80,14 @@ def transact():
     conn = db()
     cur = conn.cursor()
 
-    cur.execute(
-        "SELECT quantity FROM inventory WHERE item_name = ?",
-        (name,)
-    )
+    cur.execute("SELECT quantity FROM inventory WHERE item_name = ?", (name,))
     row = cur.fetchone()
 
     if row is None:
         if action == "issue":
             return "❌ Cannot issue item that does not exist."
 
-        # auto-create on receive
+        # First receive → create item
         cur.execute(
             "INSERT INTO inventory (item_name, quantity) VALUES (?, ?)",
             (name, qty)
@@ -164,7 +107,7 @@ def transact():
             (new_qty, name)
         )
 
-    # log transaction
+    # Log transaction
     cur.execute(
         """
         INSERT INTO transactions
@@ -178,7 +121,26 @@ def transact():
     conn.close()
     return redirect('/')
 
+# ---------------- DELETE TRANSACTIONS ----------------
+@app.route('/delete-transactions', methods=['POST'])
+def delete_transactions():
+    ids = request.form.getlist('delete_ids')
+
+    if not ids:
+        return redirect('/')
+
+    conn = db()
+    cur = conn.cursor()
+
+    cur.executemany(
+        "DELETE FROM transactions WHERE id = ?",
+        [(i,) for i in ids]
+    )
+
+    conn.commit()
+    conn.close()
+    return redirect('/')
+
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
-
