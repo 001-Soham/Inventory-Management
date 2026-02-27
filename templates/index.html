@@ -124,16 +124,16 @@ function openTab(id, btn) {
 <tr>
     <th>Item</th>
     <th>Quantity</th>
-    <th>Max Storage</th>
-    <th>Remaining</th>
+    <th>Item</th>
+    <th>Quantity Available</th>
 </tr>
 
 {% for i in items %}
 <tr>
     <td>{{ i[1] }}</td>
     <td>{{ i[2] }}</td>
-    <td>{{ i[3] }}</td>
-    <td>{{ i[4] }}</td>
+    <td>{{ i[1] }}</td>
+    <td>{{ i[2] }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -147,10 +147,10 @@ function openTab(id, btn) {
 </div>
 
 <!-- TAB 4: TRANSACTIONS -->
-<div id="transactions" class="tab">
-<h3>Transactions</h3>
+<form method="post" action="/delete-transactions">
 <table>
 <tr>
+    <th>Select</th>
     <th>Item</th>
     <th>Action</th>
     <th>Quantity</th>
@@ -160,6 +160,9 @@ function openTab(id, btn) {
 
 {% for t in transactions %}
 <tr>
+    <td>
+        <input type="checkbox" name="delete_ids" value="{{ t[0] }}">
+    </td>
     <td>{{ t[1] }}</td>
     <td>{{ t[2] }}</td>
     <td>{{ t[3] }}</td>
@@ -168,7 +171,10 @@ function openTab(id, btn) {
 </tr>
 {% endfor %}
 </table>
-</div>
 
+<button type="submit" style="margin-top:10px;background:red;">
+🗑 Delete Selected Logs
+</button>
+</form>
 </body>
 </html>
