@@ -1,100 +1,254 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>AI Inventory System</title>
+<title>Inventory Dashboard</title>
 
 <style>
-body { font-family: Arial; background:#f4f6f8; padding:20px; }
-.tabs { display:flex; margin-bottom:20px; }
-.tab-btn { padding:10px 20px; border:none; background:#ddd; cursor:pointer; margin-right:5px; }
-.tab-btn.active { background:#007bff; color:white; }
-.tab { display:none; background:white; padding:20px; border-radius:5px; }
-.tab.active { display:block; }
-input, button { padding:8px; margin:5px 0; width:100%; }
-button { background:#007bff; color:white; border:none; cursor:pointer; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-.alert { color:red; font-weight:bold; }
+
+body{
+font-family:Arial;
+margin:0;
+background:#f5f7fb;
+}
+
+.header{
+background:#2a5298;
+color:white;
+padding:20px;
+font-size:22px;
+display:flex;
+justify-content:space-between;
+}
+
+.container{
+padding:25px;
+}
+
+.card{
+background:white;
+padding:20px;
+margin-bottom:20px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,0.1);
+}
+
+.tabs{
+display:flex;
+gap:10px;
+margin-bottom:20px;
+}
+
+.tab-btn{
+padding:10px 18px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#ddd;
+}
+
+.tab-btn.active{
+background:#2a5298;
+color:white;
+}
+
+.tab{
+display:none;
+}
+
+.tab.active{
+display:block;
+}
+
+input{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+button{
+margin-top:10px;
+padding:10px;
+border:none;
+background:#2a5298;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1e3c72;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:15px;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #eee;
+text-align:center;
+}
+
+.alert{
+background:#ffe3e3;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+color:#b30000;
+}
+
 </style>
 
 <script>
-function openTab(id, btn){
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    btn.classList.add('active');
+function openTab(id,btn){
+
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"))
+document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"))
+
+document.getElementById(id).classList.add("active")
+btn.classList.add("active")
+
 }
 </script>
+
 </head>
 
 <body>
 
-<h2>AI-Based Inventory Management System</h2>
+<div class="header">
+<div>📦 Smart Inventory</div>
+<div>Dashboard</div>
+</div>
+
+<div class="container">
 
 <div class="tabs">
-    <button class="tab-btn active" onclick="openTab('issue', this)">Issue</button>
-    <button class="tab-btn" onclick="openTab('receive', this)">Receive</button>
-    <button class="tab-btn" onclick="openTab('inventory', this)">Inventory</button>
-    <button class="tab-btn" onclick="openTab('transactions', this)">Transactions</button>
+<button class="tab-btn active" onclick="openTab('issue',this)">Issue</button>
+<button class="tab-btn" onclick="openTab('receive',this)">Receive</button>
+<button class="tab-btn" onclick="openTab('inventory',this)">Inventory</button>
+<button class="tab-btn" onclick="openTab('transactions',this)">Transactions</button>
 </div>
 
 <!-- ISSUE -->
-<div id="issue" class="tab active">
+
+<div id="issue" class="tab active card">
+
+<h3>Issue Item</h3>
+
 <form method="post" action="/transact">
-    <input name="name" placeholder="Item Name" required>
-    <input type="number" name="quantity" min="1" placeholder="Quantity" required>
-    <input name="person" placeholder="Issuer Name" required>
-    <input type="hidden" name="action" value="issue">
-    <button>Issue Item</button>
+
+<input name="name" placeholder="Item Name" required>
+
+<input type="number" name="quantity" placeholder="Quantity" required>
+
+<input name="person" placeholder="Issued By" required>
+
+<input type="hidden" name="action" value="issue">
+
+<button>Issue</button>
+
 </form>
+
 </div>
 
 <!-- RECEIVE -->
-<div id="receive" class="tab">
+
+<div id="receive" class="tab card">
+
+<h3>Receive Item</h3>
+
 <form method="post" action="/transact">
-    <input name="name" placeholder="Item Name" required>
-    <input type="number" name="quantity" min="1" placeholder="Quantity" required>
-    <input name="person" placeholder="Receiver Name" required>
-    <input type="hidden" name="action" value="receive">
-    <button>Receive Item</button>
+
+<input name="name" placeholder="Item Name" required>
+
+<input type="number" name="quantity" placeholder="Quantity" required>
+
+<input name="person" placeholder="Received By" required>
+
+<input type="hidden" name="action" value="receive">
+
+<button>Receive</button>
+
 </form>
+
 </div>
 
 <!-- INVENTORY -->
-<div id="inventory" class="tab">
+
+<div id="inventory" class="tab card">
+
+<h3>Inventory</h3>
+
 <table>
-<tr><th>Item</th><th>Quantity</th></tr>
+
+<tr>
+<th>Item</th>
+<th>Quantity</th>
+</tr>
+
 {% for i in items %}
-<tr><td>{{ i[1] }}</td><td>{{ i[2] }}</td></tr>
+
+<tr>
+<td>{{i[1]}}</td>
+<td>{{i[2]}}</td>
+</tr>
+
 {% endfor %}
+
 </table>
 
-<h4>AI Alerts</h4>
+<h3>Low Stock Alerts</h3>
+
 {% for a in alerts %}
-<div class="alert">{{ a }} is LOW in stock</div>
+<div class="alert">{{a}} is low in stock</div>
 {% endfor %}
+
 </div>
 
 <!-- TRANSACTIONS -->
-<div id="transactions" class="tab">
+
+<div id="transactions" class="tab card">
+
+<h3>Transactions</h3>
+
 <form method="post" action="/delete-transactions">
+
 <table>
+
 <tr>
-<th>Select</th><th>Item</th><th>Action</th><th>Qty</th><th>Person</th><th>Time</th>
+<th>Select</th>
+<th>Item</th>
+<th>Action</th>
+<th>Qty</th>
+<th>Person</th>
+<th>Time</th>
 </tr>
+
 {% for t in transactions %}
+
 <tr>
-<td><input type="checkbox" name="delete_ids" value="{{ t[0] }}"></td>
-<td>{{ t[1] }}</td>
-<td>{{ t[2] }}</td>
-<td>{{ t[3] }}</td>
-<td>{{ t[4] }}</td>
-<td>{{ t[5] }}</td>
+<td><input type="checkbox" name="delete_ids" value="{{t[0]}}"></td>
+<td>{{t[1]}}</td>
+<td>{{t[2]}}</td>
+<td>{{t[3]}}</td>
+<td>{{t[4]}}</td>
+<td>{{t[5]}}</td>
 </tr>
+
 {% endfor %}
+
 </table>
-<button style="background:red;margin-top:10px;">🗑 Delete Selected</button>
+
+<button style="background:#c0392b">Delete Selected</button>
+
 </form>
+
+</div>
+
 </div>
 
 </body>
