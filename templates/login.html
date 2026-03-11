@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Inventory Login</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+}
+
+.login-box{
+background:white;
+padding:40px;
+border-radius:12px;
+width:350px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+text-align:center;
+}
+
+.login-box h2{
+margin-bottom:20px;
+color:#333;
+}
+
+input{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:1px solid #ccc;
+border-radius:6px;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+background:#2a5298;
+color:white;
+font-size:16px;
+border-radius:6px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+background:#1e3c72;
+}
+
+.logo{
+font-size:22px;
+font-weight:bold;
+margin-bottom:15px;
+color:#2a5298;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="login-box">
+
+<div class="logo">Smart Inventory</div>
+
+<h2>Login</h2>
+
+<form method="post" action="/login">
+
+<input name="username" placeholder="Username" required>
+
+<input type="password" name="password" placeholder="Password" required>
+
+<button>Login</button>
+
+</form>
+
+</div>
+
+</body>
+</html>
