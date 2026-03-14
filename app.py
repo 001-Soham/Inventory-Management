@@ -16,31 +16,11 @@ def db():
 
 # ---------------- INIT DATABASE ----------------
 def init_db():
+
     conn = db()
     cur = conn.cursor()
 
-    # SHOP PROFILE TABLE
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS shop_profile (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    shop_name TEXT,
-    owner_name TEXT,
-    staff_count INTEGER,
-    legal_doc TEXT
-    )
-    """)
-
-    # ADD PRICE TO INVENTORY
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS inventory (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_name TEXT UNIQUE,
-    quantity INTEGER NOT NULL,
-    price REAL
-    )
-    """)
-    
-    # USER TABLE
+    # USERS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,16 +29,28 @@ def init_db():
     )
     """)
 
-    # INVENTORY TABLE
+    # SHOP PROFILE
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS shop_profile (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        shop_name TEXT,
+        owner_name TEXT,
+        staff_count INTEGER,
+        legal_doc TEXT
+    )
+    """)
+
+    # INVENTORY WITH PRICE
     cur.execute("""
     CREATE TABLE IF NOT EXISTS inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         item_name TEXT UNIQUE,
-        quantity INTEGER NOT NULL
+        quantity INTEGER NOT NULL,
+        price REAL DEFAULT 0
     )
     """)
 
-    # TRANSACTIONS TABLE
+    # TRANSACTIONS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,7 +113,6 @@ def login():
         )
 
         user = cur.fetchone()
-
         conn.close()
 
         if user:
@@ -134,7 +125,7 @@ def login():
 
 # ---------------- DASHBOARD ----------------
 @app.route('/dashboard')
-def index():
+def dashboard():
 
     if 'user' not in session:
         return redirect('/')
@@ -148,6 +139,9 @@ def index():
     cur.execute("SELECT * FROM transactions ORDER BY time DESC")
     transactions = cur.fetchall()
 
+    cur.execute("SELECT * FROM shop_profile LIMIT 1")
+    profile = cur.fetchone()
+
     alerts = low_stock_items()
 
     conn.close()
@@ -156,8 +150,47 @@ def index():
         "index.html",
         items=items,
         transactions=transactions,
-        alerts=alerts
+        alerts=alerts,
+        profile=profile
     )
+
+# ---------------- UPDATE PROFILE ----------------
+@app.route('/update-profile', methods=['POST'])
+def update_profile():
+
+    if 'user' not in session:
+        return redirect('/')
+
+    shop = request.form['shop_name']
+    owner = request.form['owner_name']
+    staff = request.form['staff_count']
+    doc = request.form['legal_doc']
+
+    conn = db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM shop_profile")
+
+    if cur.fetchone() is None:
+
+        cur.execute("""
+        INSERT INTO shop_profile
+        (shop_name, owner_name, staff_count, legal_doc)
+        VALUES (?, ?, ?, ?)
+        """,(shop,owner,staff,doc))
+
+    else:
+
+        cur.execute("""
+        UPDATE shop_profile
+        SET shop_name=?, owner_name=?, staff_count=?, legal_doc=?
+        WHERE id=1
+        """,(shop,owner,staff,doc))
+
+    conn.commit()
+    conn.close()
+
+    return redirect('/dashboard')
 
 # ---------------- RECEIVE / ISSUE ----------------
 @app.route('/transact', methods=['POST'])
@@ -170,6 +203,7 @@ def transact():
     qty = int(request.form['quantity'])
     action = request.form['action']
     person = request.form['person']
+    price = request.form.get('price',0)
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -185,8 +219,8 @@ def transact():
             return "Item does not exist"
 
         cur.execute(
-            "INSERT INTO inventory (item_name,quantity) VALUES (?,?)",
-            (name,qty)
+            "INSERT INTO inventory (item_name,quantity,price) VALUES (?,?,?)",
+            (name,qty,price)
         )
 
     else:
