@@ -3,6 +3,8 @@
 <head>
 <title>Inventory Dashboard</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 
 body{
@@ -36,6 +38,7 @@ box-shadow:0 5px 15px rgba(0,0,0,0.1);
 display:flex;
 gap:10px;
 margin-bottom:20px;
+flex-wrap:wrap;
 }
 
 .tab-btn{
@@ -101,9 +104,18 @@ border-radius:6px;
 color:#b30000;
 }
 
+.logout-btn{
+background:#e74c3c;
+}
+
+.logout-btn:hover{
+background:#c0392b;
+}
+
 </style>
 
 <script>
+
 function openTab(id,btn){
 
 document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"))
@@ -113,6 +125,7 @@ document.getElementById(id).classList.add("active")
 btn.classList.add("active")
 
 }
+
 </script>
 
 </head>
@@ -126,11 +139,22 @@ btn.classList.add("active")
 
 <div class="container">
 
+<!-- INVENTORY GRAPH -->
+
+<div class="card">
+
+<h3>Inventory Analytics</h3>
+
+<canvas id="stockChart"></canvas>
+
+</div>
+
 <div class="tabs">
 <button class="tab-btn active" onclick="openTab('issue',this)">Issue</button>
 <button class="tab-btn" onclick="openTab('receive',this)">Receive</button>
 <button class="tab-btn" onclick="openTab('inventory',this)">Inventory</button>
 <button class="tab-btn" onclick="openTab('transactions',this)">Transactions</button>
+<button class="tab-btn" onclick="openTab('profile',this)">Profile</button>
 </div>
 
 <!-- ISSUE -->
@@ -249,7 +273,62 @@ btn.classList.add("active")
 
 </div>
 
+<!-- PROFILE -->
+
+<div id="profile" class="tab card">
+
+<h3>Shop Profile</h3>
+
+<form method="post" action="/update-profile">
+
+<input name="shop_name" placeholder="Shop Name" value="{{profile[1] if profile}}">
+
+<input name="owner_name" placeholder="Owner Name" value="{{profile[2] if profile}}">
+
+<input type="number" name="staff_count" placeholder="Number of Staff" value="{{profile[3] if profile}}">
+
+<input name="legal_doc" placeholder="Legal Document ID" value="{{profile[4] if profile}}">
+
+<button>Update Profile</button>
+
+</form>
+
+<hr>
+
+<a href="/logout">
+<button class="logout-btn">Logout</button>
+</a>
+
 </div>
+
+</div>
+
+<script>
+
+const labels = [
+{% for i in items %}
+"{{i[1]}}",
+{% endfor %}
+];
+
+const quantities = [
+{% for i in items %}
+{{i[2]}},
+{% endfor %}
+];
+
+new Chart(document.getElementById("stockChart"),{
+type:"bar",
+data:{
+labels:labels,
+datasets:[{
+label:"Stock Quantity",
+data:quantities
+}]
+}
+});
+
+</script>
 
 </body>
 </html>
