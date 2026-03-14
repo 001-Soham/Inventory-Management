@@ -19,6 +19,27 @@ def init_db():
     conn = db()
     cur = conn.cursor()
 
+    # SHOP PROFILE TABLE
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS shop_profile (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_name TEXT,
+    owner_name TEXT,
+    staff_count INTEGER,
+    legal_doc TEXT
+    )
+    """)
+
+    # ADD PRICE TO INVENTORY
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS inventory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item_name TEXT UNIQUE,
+    quantity INTEGER NOT NULL,
+    price REAL
+    )
+    """)
+    
     # USER TABLE
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
