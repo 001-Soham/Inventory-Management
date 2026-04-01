@@ -1,127 +1,186 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Inventory Management</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Inventory Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #2c3e50; color: white; padding: 1rem; display: flex; justify-content: space-between; }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .tab-btn { flex: 1; padding: 1rem; background: white; border: none; border-radius: 8px; cursor: pointer; }
+        .tab-btn.active { background: #3498db; color: white; }
+        .tab-content { display: none; background: white; padding: 2rem; border-radius: 8px; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        input, select { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #27ae60; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .issue-btn { background: #e74c3c; }
+        .message { padding: 1rem; margin-top: 1rem; border-radius: 4px; }
+        .success { background: #d5f4e6; color: #27ae60; }
+        .error { background: #fadbd8; color: #e74c3c; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.8rem; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #ecf0f1; }
+        .receive { color: #27ae60; }
+        .issue { color: #e74c3c; }
+    </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">
-            <i class="fas fa-warehouse"></i>
-            <span>InventoryPro</span>
-        </div>
-        <div class="nav-user">
-            <span id="usernameDisplay">Loading...</span>
-            <button id="logoutBtn" class="btn-logout" title="Logout">
-                <i class="fas fa-sign-out-alt"></i>
-            </button>
-        </div>
+        <div>Inventory Management System</div>
+        <button onclick="logout()">Logout</button>
     </nav>
 
     <div class="container">
         <div class="tabs">
-            <button class="tab-btn active" data-tab="receive">
-                <i class="fas fa-arrow-down"></i> Receive
-            </button>
-            <button class="tab-btn" data-tab="issue">
-                <i class="fas fa-arrow-up"></i> Issue
-            </button>
-            <button class="tab-btn" data-tab="history">
-                <i class="fas fa-history"></i> History
-            </button>
+            <button class="tab-btn active" onclick="showTab('receive')">📥 Receive</button>
+            <button class="tab-btn" onclick="showTab('issue')">📤 Issue</button>
+            <button class="tab-btn" onclick="showTab('history')">📋 History</button>
         </div>
 
-        <!-- Receive Tab -->
         <div id="receive" class="tab-content active">
-            <div class="card">
-                <h3><i class="fas fa-plus-circle"></i> Receive Items</h3>
-                <form id="receiveForm">
-                    <div class="form-group">
-                        <label>Select Item</label>
-                        <div class="select-wrapper">
-                            <select id="receiveItem">
-                                <option value="">Choose item...</option>
-                            </select>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Quantity</label>
-                            <input type="number" id="receiveQty" min="1" placeholder="0">
-                        </div>
-                        <div class="form-group">
-                            <label>Unit Price (Optional)</label>
-                            <input type="number" id="receivePrice" step="0.01" min="0" placeholder="0.00">
-                        </div>
-                    </div>
-                    <button type="button" id="receiveBtn" class="btn-success" disabled>
-                        <i class="fas fa-check"></i> Receive Item
-                    </button>
-                    <div id="receiveMsg" class="message"></div>
-                </form>
+            <h2>Receive Items</h2>
+            <div class="form-group">
+                <label>Item:</label>
+                <select id="receiveItem">
+                    <option value="">Loading...</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label>Quantity:</label>
+                <input type="number" id="receiveQty" min="1" placeholder="1">
+            </div>
+            <button onclick="receiveItem()" id="receiveBtn" disabled>Receive</button>
+            <div id="receiveMsg"></div>
         </div>
 
-        <!-- Issue Tab -->
         <div id="issue" class="tab-content">
-            <div class="card">
-                <h3><i class="fas fa-minus-circle"></i> Issue Items</h3>
-                <form id="issueForm">
-                    <div class="form-group">
-                        <label>Select Item</label>
-                        <div class="select-wrapper">
-                            <select id="issueItem">
-                                <option value="">Choose item...</option>
-                            </select>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Quantity</label>
-                        <input type="number" id="issueQty" min="1" placeholder="0">
-                    </div>
-                    <div id="availableQty" class="available-stock"></div>
-                    <button type="button" id="issueBtn" class="btn-danger" disabled>
-                        <i class="fas fa-paper-plane"></i> Issue Item
-                    </button>
-                    <div id="issueMsg" class="message"></div>
-                </form>
+            <h2>Issue Items</h2>
+            <div class="form-group">
+                <label>Item:</label>
+                <select id="issueItem">
+                    <option value="">Loading...</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label>Quantity:</label>
+                <input type="number" id="issueQty" min="1" placeholder="1">
+            </div>
+            <div id="stockMsg"></div>
+            <button onclick="issueItem()" id="issueBtn" class="issue-btn" disabled>Issue</button>
+            <div id="issueMsg"></div>
         </div>
 
-        <!-- History Tab -->
         <div id="history" class="tab-content">
-            <div class="card">
-                <h3><i class="fas fa-history"></i> Transaction History</h3>
-                <div class="table-container">
-                    <table id="historyTable">
-                        <thead>
-                            <tr>
-                                <th>Date & Time</th>
-                                <th>Item Name</th>
-                                <th>Quantity</th>
-                                <th>Type</th>
-                                <th>Unit Price</th>
-                                <th>Total Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 2rem;">
-                                    <i class="fas fa-spinner fa-spin"></i> Loading transactions...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <h2>Transaction History</h2>
+            <table id="historyTable">
+                <thead>
+                    <tr><th>Date</th><th>Item</th><th>Qty</th><th>Type</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="4">Loading...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+    <script>
+        let token = localStorage.getItem('token');
+        if (!token) window.location.href = '/';
+
+        async function api(url, data) {
+            const res = await fetch(url, {
+                method: data ? 'POST' : 'GET',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: data ? JSON.stringify(data) : null
+            });
+            return res.json();
+        }
+
+        async function loadData() {
+            const items = await api('/api/items');
+            const selects = ['receiveItem', 'issueItem'];
+            
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Select item...</option>';
+                items.forEach(item => {
+                    select.innerHTML += `<option value="${item.name}">${item.name} (Stock: ${item.quantity})</option>`;
+                });
+            });
+            
+            const history = await api('/api/history');
+            const tbody = document.querySelector('#historyTable tbody');
+            tbody.innerHTML = '';
+            history.forEach(t => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${new Date(t.date).toLocaleString()}</td>
+                        <td>${t.item_name}</td>
+                        <td>${t.quantity}</td>
+                        <td class="${t.type.toLowerCase()}">${t.type}</td>
+                    </tr>`;
+            });
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function receiveItem() {
+            const item = document.getElementById('receiveItem').value;
+            const qty = document.getElementById('receiveQty').value;
+            
+            if (!item || !qty) return showMsg('receiveMsg', 'Fill all fields', 'error');
+            
+            const res = await api('/api/receive', {item, quantity: qty});
+            showMsg('receiveMsg', res.message || res.error, res.message ? 'success' : 'error');
+            document.getElementById('receiveForm').reset();
+            loadData();
+        }
+
+        async function issueItem() {
+            const item = document.getElementById('issueItem').value;
+            const qty = document.getElementById('issueQty').value;
+            
+            if (!item || !qty) return showMsg('issueMsg', 'Fill all fields', 'error');
+            
+            const res = await api('/api/issue', {item, quantity: qty});
+            showMsg('issueMsg', res.message || res.error, res.message ? 'success' : 'error');
+            document.getElementById('issueForm').reset();
+            loadData();
+        }
+
+        function showMsg(id, msg, type) {
+            document.getElementById(id).innerHTML = `<div class="message ${type}">${msg}</div>`;
+            setTimeout(() => document.getElementById(id).innerHTML = '', 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+        // Event listeners
+        document.getElementById('receiveQty').oninput = () => {
+            document.getElementById('receiveBtn').disabled = !document.getElementById('receiveItem').value;
+        };
+        document.getElementById('issueQty').oninput = () => {
+            document.getElementById('issueBtn').disabled = !document.getElementById('issueItem').value;
+        };
+
+        // Load on start
+        loadData();
+    </script>
 </body>
 </html>
