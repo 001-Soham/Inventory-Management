@@ -15,7 +15,7 @@
         </div>
         <div class="nav-user">
             <span id="usernameDisplay">Loading...</span>
-            <button id="logoutBtn" class="btn-logout">
+            <button id="logoutBtn" class="btn-logout" title="Logout">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
         </div>
@@ -37,75 +37,85 @@
         <!-- Receive Tab -->
         <div id="receive" class="tab-content active">
             <div class="card">
-                <h3>Receive Items</h3>
-                <div class="form-group">
-                    <label>Select Item</label>
-                    <div class="select-wrapper">
-                        <select id="receiveItem">
-                            <option value="">Choose item...</option>
-                        </select>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-                <div class="form-row">
+                <h3><i class="fas fa-plus-circle"></i> Receive Items</h3>
+                <form id="receiveForm">
                     <div class="form-group">
-                        <label>Quantity</label>
-                        <input type="number" id="receiveQty" min="1" placeholder="0">
+                        <label>Select Item</label>
+                        <div class="select-wrapper">
+                            <select id="receiveItem">
+                                <option value="">Choose item...</option>
+                            </select>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Unit Price (Optional)</label>
-                        <input type="number" id="receivePrice" step="0.01" placeholder="0.00">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" id="receiveQty" min="1" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Unit Price (Optional)</label>
+                            <input type="number" id="receivePrice" step="0.01" min="0" placeholder="0.00">
+                        </div>
                     </div>
-                </div>
-                <button id="receiveBtn" class="btn-success">
-                    <i class="fas fa-check"></i> Receive Item
-                </button>
-                <div id="receiveMsg"></div>
+                    <button type="button" id="receiveBtn" class="btn-success" disabled>
+                        <i class="fas fa-check"></i> Receive Item
+                    </button>
+                    <div id="receiveMsg" class="message"></div>
+                </form>
             </div>
         </div>
 
         <!-- Issue Tab -->
         <div id="issue" class="tab-content">
             <div class="card">
-                <h3>Issue Items</h3>
-                <div class="form-group">
-                    <label>Select Item</label>
-                    <div class="select-wrapper">
-                        <select id="issueItem">
-                            <option value="">Choose item...</option>
-                        </select>
-                        <i class="fas fa-chevron-down"></i>
+                <h3><i class="fas fa-minus-circle"></i> Issue Items</h3>
+                <form id="issueForm">
+                    <div class="form-group">
+                        <label>Select Item</label>
+                        <div class="select-wrapper">
+                            <select id="issueItem">
+                                <option value="">Choose item...</option>
+                            </select>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Quantity</label>
-                    <input type="number" id="issueQty" min="1" placeholder="0">
-                </div>
-                <div id="availableQty" class="available-stock"></div>
-                <button id="issueBtn" class="btn-danger">
-                    <i class="fas fa-paper-plane"></i> Issue Item
-                </button>
-                <div id="issueMsg"></div>
+                    <div class="form-group">
+                        <label>Quantity</label>
+                        <input type="number" id="issueQty" min="1" placeholder="0">
+                    </div>
+                    <div id="availableQty" class="available-stock"></div>
+                    <button type="button" id="issueBtn" class="btn-danger" disabled>
+                        <i class="fas fa-paper-plane"></i> Issue Item
+                    </button>
+                    <div id="issueMsg" class="message"></div>
+                </form>
             </div>
         </div>
 
         <!-- History Tab -->
         <div id="history" class="tab-content">
             <div class="card">
-                <h3>Transaction History</h3>
+                <h3><i class="fas fa-history"></i> Transaction History</h3>
                 <div class="table-container">
                     <table id="historyTable">
                         <thead>
                             <tr>
-                                <th>Date</th>
-                                <th>Item</th>
+                                <th>Date & Time</th>
+                                <th>Item Name</th>
                                 <th>Quantity</th>
                                 <th>Type</th>
                                 <th>Unit Price</th>
-                                <th>Total</th>
+                                <th>Total Amount</th>
                             </tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 2rem;">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading transactions...
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
