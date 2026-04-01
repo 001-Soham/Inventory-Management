@@ -6,181 +6,243 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #f5f5f5; }
-        .navbar { background: #2c3e50; color: white; padding: 1rem; display: flex; justify-content: space-between; }
+        .navbar { background: #2c3e50; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
         .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
         .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; }
-        .tab-btn { flex: 1; padding: 1rem; background: white; border: none; border-radius: 8px; cursor: pointer; }
+        .tab-btn { flex: 1; padding: 1rem; background: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .tab-btn.active { background: #3498db; color: white; }
-        .tab-content { display: none; background: white; padding: 2rem; border-radius: 8px; }
+        .tab-content { display: none; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .tab-content.active { display: block; }
         .form-group { margin-bottom: 1rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
-        input, select { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 4px; }
-        button { background: #27ae60; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; }
+        input, select { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+        button { background: #27ae60; color: white; padding: 1rem 2rem; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; }
         button:disabled { background: #bdc3c7; cursor: not-allowed; }
         .issue-btn { background: #e74c3c; }
-        .message { padding: 1rem; margin-top: 1rem; border-radius: 4px; }
-        .success { background: #d5f4e6; color: #27ae60; }
-        .error { background: #fadbd8; color: #e74c3c; }
+        .message { padding: 1rem; margin-top: 1rem; border-radius: 4px; font-weight: bold; }
+        .success { background: #d5f4e6; color: #27ae60; border: 1px solid #27ae60; }
+        .error { background: #fadbd8; color: #e74c3c; border: 1px solid #e74c3c; }
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 0.8rem; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #ecf0f1; }
-        .receive { color: #27ae60; }
-        .issue { color: #e74c3c; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #ecf0f1; font-weight: bold; }
+        .receive { color: #27ae60; font-weight: bold; }
+        .issue { color: #e74c3c; font-weight: bold; }
+        .loading { text-align: center; padding: 2rem; color: #7f8c8d; }
+        #stockMsg { background: #e8f5e8; padding: 0.8rem; border-radius: 4px; margin: 0.5rem 0; font-weight: bold; color: #27ae60; }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <div>Inventory Management System</div>
-        <button onclick="logout()">Logout</button>
+        <div><i style="margin-right: 0.5rem;">📦</i>Inventory Management System</div>
+        <button onclick="logout()" style="background: #e74c3c; padding: 0.5rem 1rem; font-size: 14px;">Logout</button>
     </nav>
 
     <div class="container">
         <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('receive')">📥 Receive</button>
-            <button class="tab-btn" onclick="showTab('issue')">📤 Issue</button>
-            <button class="tab-btn" onclick="showTab('history')">📋 History</button>
+            <button class="tab-btn active" onclick="showTab('receive')">📥 Receive Items</button>
+            <button class="tab-btn" onclick="showTab('issue')">📤 Issue Items</button>
+            <button class="tab-btn" onclick="showTab('history')">📋 Transaction History</button>
         </div>
 
+        <!-- RECEIVE TAB -->
         <div id="receive" class="tab-content active">
-            <h2>Receive Items</h2>
+            <h2>Receive New Items</h2>
             <div class="form-group">
-                <label>Item:</label>
+                <label>Select Item:</label>
                 <select id="receiveItem">
-                    <option value="">Loading...</option>
+                    <option value="">Loading items...</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Quantity:</label>
-                <input type="number" id="receiveQty" min="1" placeholder="1">
+                <input type="number" id="receiveQty" min="1" placeholder="Enter quantity">
             </div>
-            <button onclick="receiveItem()" id="receiveBtn" disabled>Receive</button>
+            <button onclick="receiveItem()" id="receiveBtn" disabled>✅ Receive Items</button>
             <div id="receiveMsg"></div>
         </div>
 
+        <!-- ISSUE TAB -->
         <div id="issue" class="tab-content">
             <h2>Issue Items</h2>
             <div class="form-group">
-                <label>Item:</label>
+                <label>Select Item:</label>
                 <select id="issueItem">
-                    <option value="">Loading...</option>
+                    <option value="">Loading items...</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Quantity:</label>
-                <input type="number" id="issueQty" min="1" placeholder="1">
+                <input type="number" id="issueQty" min="1" placeholder="Enter quantity">
             </div>
             <div id="stockMsg"></div>
-            <button onclick="issueItem()" id="issueBtn" class="issue-btn" disabled>Issue</button>
+            <button onclick="issueItem()" id="issueBtn" class="issue-btn" disabled>📤 Issue Items</button>
             <div id="issueMsg"></div>
         </div>
 
+        <!-- HISTORY TAB -->
         <div id="history" class="tab-content">
-            <h2>Transaction History</h2>
+            <h2>📊 Recent Transactions (Last 50)</h2>
             <table id="historyTable">
                 <thead>
-                    <tr><th>Date</th><th>Item</th><th>Qty</th><th>Type</th></tr>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Item Name</th>
+                        <th>Quantity</th>
+                        <th>Type</th>
+                    </tr>
                 </thead>
-                <tbody>
-                    <tr><td colspan="4">Loading...</td></tr>
+                <tbody id="historyBody">
+                    <tr class="loading"><td colspan="4">🔄 Loading transactions...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <script>
-        let token = localStorage.getItem('token');
-        if (!token) window.location.href = '/';
-
-        async function api(url, data) {
-            const res = await fetch(url, {
-                method: data ? 'POST' : 'GET',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: data ? JSON.stringify(data) : null
-            });
-            return res.json();
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+            throw new Error('No token');
         }
 
-        async function loadData() {
-            const items = await api('/api/items');
-            const selects = ['receiveItem', 'issueItem'];
-            
-            selects.forEach(id => {
-                const select = document.getElementById(id);
-                select.innerHTML = '<option value="">Select item...</option>';
-                items.forEach(item => {
-                    select.innerHTML += `<option value="${item.name}">${item.name} (Stock: ${item.quantity})</option>`;
+        // API helper with proper JWT header
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(endpoint, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        ...options.headers
+                    }
                 });
-            });
-            
-            const history = await api('/api/history');
-            const tbody = document.querySelector('#historyTable tbody');
-            tbody.innerHTML = '';
-            history.forEach(t => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${new Date(t.date).toLocaleString()}</td>
-                        <td>${t.item_name}</td>
-                        <td>${t.quantity}</td>
-                        <td class="${t.type.toLowerCase()}">${t.type}</td>
-                    </tr>`;
-            });
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                return { error: 'Network error' };
+            }
         }
 
-        function showTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tab).classList.add('active');
+        // Load all data
+        async function loadDashboard() {
+            try {
+                // Load items
+                const items = await apiCall('/api/items');
+                const selects = document.querySelectorAll('select[id$="Item"]');
+                selects.forEach(select => {
+                    select.innerHTML = '<option value="">Select an item...</option>';
+                    items.forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item.name;
+                        opt.textContent = `${item.name} (Stock: ${item.quantity})`;
+                        select.appendChild(opt);
+                    });
+                });
+
+                // Load history
+                const history = await apiCall('/api/history');
+                const tbody = document.getElementById('historyBody');
+                tbody.innerHTML = '';
+                if (history.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:#7f8c8d;">No transactions yet. Start by receiving items! 🎉</td></tr>';
+                } else {
+                    history.forEach(t => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${new Date(t.date).toLocaleString()}</td>
+                            <td>${t.item_name}</td>
+                            <td>${t.quantity}</td>
+                            <td class="${t.type.toLowerCase()}">${t.type}</td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+        }
+
+        // Tab switching
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
             event.target.classList.add('active');
         }
 
+        // Receive item
         async function receiveItem() {
             const item = document.getElementById('receiveItem').value;
-            const qty = document.getElementById('receiveQty').value;
+            const qty = parseInt(document.getElementById('receiveQty').value);
             
-            if (!item || !qty) return showMsg('receiveMsg', 'Fill all fields', 'error');
-            
-            const res = await api('/api/receive', {item, quantity: qty});
-            showMsg('receiveMsg', res.message || res.error, res.message ? 'success' : 'error');
-            document.getElementById('receiveForm').reset();
-            loadData();
+            if (!item || qty <= 0) {
+                showMessage('receiveMsg', 'Please select item and valid quantity', 'error');
+                return;
+            }
+
+            const result = await apiCall('/api/receive', {
+                method: 'POST',
+                body: JSON.stringify({ item, quantity: qty })
+            });
+
+            showMessage('receiveMsg', result.message || result.error, result.message ? 'success' : 'error');
+            if (result.message) {
+                document.getElementById('receiveQty').value = '';
+                loadDashboard();
+            }
         }
 
+        // Issue item
         async function issueItem() {
             const item = document.getElementById('issueItem').value;
-            const qty = document.getElementById('issueQty').value;
+            const qty = parseInt(document.getElementById('issueQty').value);
             
-            if (!item || !qty) return showMsg('issueMsg', 'Fill all fields', 'error');
-            
-            const res = await api('/api/issue', {item, quantity: qty});
-            showMsg('issueMsg', res.message || res.error, res.message ? 'success' : 'error');
-            document.getElementById('issueForm').reset();
-            loadData();
+            if (!item || qty <= 0) {
+                showMessage('issueMsg', 'Please select item and valid quantity', 'error');
+                return;
+            }
+
+            const result = await apiCall('/api/issue', {
+                method: 'POST',
+                body: JSON.stringify({ item, quantity: qty })
+            });
+
+            showMessage('issueMsg', result.message || result.error, result.message ? 'success' : 'error');
+            if (result.message) {
+                document.getElementById('issueQty').value = '';
+                loadDashboard();
+            }
         }
 
-        function showMsg(id, msg, type) {
-            document.getElementById(id).innerHTML = `<div class="message ${type}">${msg}</div>`;
-            setTimeout(() => document.getElementById(id).innerHTML = '', 3000);
+        // Show messages
+        function showMessage(id, message, type) {
+            const el = document.getElementById(id);
+            el.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => el.innerHTML = '', 4000);
         }
 
+        // Logout
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/';
         }
 
         // Event listeners
-        document.getElementById('receiveQty').oninput = () => {
-            document.getElementById('receiveBtn').disabled = !document.getElementById('receiveItem').value;
-        };
-        document.getElementById('issueQty').oninput = () => {
-            document.getElementById('issueBtn').disabled = !document.getElementById('issueItem').value;
-        };
+        document.getElementById('receiveQty').addEventListener('input', function() {
+            const item = document.getElementById('receiveItem').value;
+            document.getElementById('receiveBtn').disabled = !item || !this.value;
+        });
 
-        // Load on start
-        loadData();
+        document.getElementById('issueQty').addEventListener('input', function() {
+            const item = document.getElementById('issueItem').value;
+            document.getElementById('issueBtn').disabled = !item || !this.value;
+        });
+
+        // Load on page ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadDashboard);
+        } else {
+            loadDashboard();
+        }
     </script>
 </body>
 </html>
