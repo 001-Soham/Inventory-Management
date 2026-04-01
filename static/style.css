@@ -1,142 +1,251 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    color: #333;
-}
-
-.auth-page {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.auth-container {
-    max-width: 400px;
-    width: 100%;
-}
-
-.auth-card {
-    background: white;
+/* Add this to your existing style.css */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 2rem;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    text-align: center;
 }
 
-.logo {
+.tabs {
+    display: flex;
+    background: white;
+    border-radius: 16px;
+    padding: 8px;
     margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    gap: 8px;
 }
 
-.logo i {
-    font-size: 3rem;
-    color: #667eea;
-    margin-bottom: 1rem;
+.tab-btn {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #666;
 }
 
-.logo h1 {
+.tab-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+.card h3 {
+    margin-bottom: 2rem;
     color: #333;
     font-size: 1.8rem;
-    font-weight: 700;
 }
 
-.input-group {
-    position: relative;
+.form-group {
     margin-bottom: 1.5rem;
 }
 
-.input-group i {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #999;
-    z-index: 2;
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #555;
 }
 
-.input-group input {
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.select-wrapper {
+    position: relative;
+}
+
+.select-wrapper select,
+input[type="number"] {
     width: 100%;
-    padding: 15px 15px 15px 50px;
+    padding: 15px;
     border: 2px solid #e1e5e9;
     border-radius: 12px;
     font-size: 16px;
-    transition: all 0.3s ease;
     background: #f8f9fa;
+    transition: all 0.3s ease;
 }
 
-.input-group input:focus {
+.select-wrapper i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none;
+}
+
+select:focus, input:focus {
     outline: none;
     border-color: #667eea;
     background: white;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.btn-primary {
+.btn-success, .btn-danger {
     width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    padding: 16px;
     border: none;
     border-radius: 12px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-}
-
-.auth-link {
-    margin-top: 1.5rem;
-    color: #666;
-}
-
-.auth-link a {
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.error {
-    color: #e74c3c;
-    margin-top: 1rem;
-    font-size: 14px;
-}
-
-/* Dashboard Styles */
-.navbar {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    padding: 1rem 2rem;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(86, 171, 47, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255, 65, 108, 0.4);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.available-stock {
+    background: #e8f5e8;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 12px 0;
+    font-weight: 600;
+    color: #2d5a2d;
+}
+
+.message {
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+.message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+th, td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #555;
     position: sticky;
     top: 0;
-    z-index: 100;
 }
 
-.nav-brand {
-    display: flex;
-    align-items: center;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #333;
+.status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
-.nav-brand i {
-    color: #667eea;
-    margin-right: 0.5rem;
-    font-size: 1
+.status.receive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status.issue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.btn-logout {
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+    background: #f8f9fa;
+    color: #e74c3c;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .tabs {
+        flex-direction: column;
+    }
+    
+    .container {
+        padding: 1rem;
+    }
+}
