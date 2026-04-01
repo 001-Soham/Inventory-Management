@@ -1,33 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Inventory Management</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        input { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px; }
+        button { width: 100%; padding: 0.8rem; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .error { color: #e74c3c; margin-top: 1rem; }
+        a { color: #3498db; text-decoration: none; }
+    </style>
 </head>
-<body class="auth-page">
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="logo">
-                <i class="fas fa-warehouse"></i>
-                <h1>InventoryPro</h1>
-            </div>
-            <form id="loginForm">
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="username" placeholder="Username" required>
-                </div>
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" placeholder="Password" required>
-                </div>
-                <button type="submit" class="btn-primary">Login</button>
-            </form>
-            <p class="auth-link">Don't have an account? <a href="/register">Register here</a></p>
-            <div id="loginError" class="error"></div>
-        </div>
+<body>
+    <div class="card">
+        <h2>Login</h2>
+        <input id="username" placeholder="Username" type="text">
+        <input id="password" placeholder="Password" type="password">
+        <button onclick="login()">Login</button>
+        <div id="error" class="error"></div>
+        <p>Don't have account? <a href="#" onclick="showRegister()">Register</a></p>
     </div>
-    <script src="{{ url_for('static', filename='auth.js') }}"></script>
+
+    <script>
+        let isRegister = false;
+        
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username, password})
+            }).then(r => r.json());
+            
+            if (res.token) {
+                localStorage.setItem('token', res.token);
+                window.location.href = '/dashboard';
+            } else {
+                document.getElementById('error').textContent = res.error;
+            }
+        }
+        
+        async function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const res = await fetch('/register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username, password})
+            }).then(r => r.json());
+            
+            if (res.message) {
+                alert('Registered! Please login.');
+                document.getElementById('error').textContent = '';
+            } else {
+                document.getElementById('error').textContent = res.error;
+            }
+        }
+        
+        function showRegister() {
+            isRegister = !isRegister;
+            document.querySelector('h2').textContent = isRegister ? 'Register' : 'Login';
+            document.querySelector('button').onclick = isRegister ? register : login;
+            document.querySelector('p').innerHTML = isRegister ? 
+                'Have account? <a href="#" onclick="showRegister()">Login</a>' : 
+                "Don't have account? <a href=\"#\" onclick=\"showRegister()\">Register</a>";
+        }
+        
+        document.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                isRegister ? register() : login();
+            }
+        });
+    </script>
 </body>
 </html>
