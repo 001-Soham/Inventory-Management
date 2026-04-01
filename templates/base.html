@@ -3,11 +3,7 @@
 <head>
     <title>MAVERIX</title>
 
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-    <!-- Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -18,10 +14,10 @@
 <div class="sidebar">
     <h2>MAVERIX</h2>
 
-    <a href="/dashboard" target="_blank"><i class="ri-dashboard-line"></i> Dashboard</a>
-    <a href="/receive" target="_blank"><i class="ri-inbox-line"></i> Receive</a>
-    <a href="/issue" target="_blank"><i class="ri-upload-line"></i> Issue</a>
-    <a href="/stock" target="_blank"><i class="ri-stack-line"></i> Stock</a>
+    <a onclick="loadPage('dashboard')">Dashboard</a>
+    <a onclick="loadPage('receive')">Receive</a>
+    <a onclick="loadPage('issue')">Issue</a>
+    <a onclick="loadPage('stock')">Stock</a>
 </div>
 
 <!-- Main -->
@@ -29,12 +25,28 @@
 
     <div class="navbar">
         <h3>Inventory Dashboard</h3>
-        <div class="user">👤 Admin</div>
     </div>
 
-    {% block content %}{% endblock %}
+    <div id="content-area">
+        <!-- Default load -->
+    </div>
 
 </div>
+
+<script>
+function loadPage(page) {
+    fetch("/" + page)
+    .then(res => res.text())
+    .then(data => {
+        document.getElementById("content-area").innerHTML = data;
+    });
+}
+
+// Load dashboard by default
+window.onload = function() {
+    loadPage('dashboard');
+}
+</script>
 
 </body>
 </html>
