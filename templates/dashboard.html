@@ -1,27 +1,18 @@
-{% extends "base.html" %}
-
-{% block content %}
-
 <div class="cards">
 
-    <a href="/receive" target="_blank" class="card gradient1">
-        <i class="ri-inbox-fill"></i>
-        <h3>Receive Items</h3>
-        <p>Add new stock to inventory</p>
-    </a>
+    <div class="card gradient1" onclick="loadPage('receive')">
+        <h3>📥 Receive Items</h3>
+        <p>Add inventory</p>
+    </div>
 
-    <a href="/issue" target="_blank" class="card gradient2">
-        <i class="ri-upload-fill"></i>
-        <h3>Issue Items</h3>
-        <p>Dispatch items quickly</p>
-    </a>
+    <div class="card gradient2" onclick="loadPage('issue')">
+        <h3>📤 Issue Items</h3>
+        <p>Dispatch stock</p>
+    </div>
 
-    <a href="/stock" target="_blank" class="card gradient3">
-        <i class="ri-stack-fill"></i>
-        <h3>View Stock</h3>
-        <p>Check available inventory</p>
-    </a>
+    <div class="card gradient3" onclick="loadPage('stock')">
+        <h3>📦 View Stock</h3>
+        <p>Check inventory</p>
+    </div>
 
 </div>
-
-{% endblock %}
