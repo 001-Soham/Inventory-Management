@@ -1,52 +1,16 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>INVENTORY MANAGEMENT SYSTEM :)</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-
 <body>
-
-<!-- Sidebar -->
-<div class="sidebar">
-    <h2>INVENTORY MANAGEMENT SYSTEM :)</h2>
-
-    <a onclick="loadPage('dashboard')">Dashboard</a>
-    <a onclick="loadPage('receive')">Receive</a>
-    <a onclick="loadPage('issue')">Issue</a>
-    <a onclick="loadPage('stock')">Stock</a>
-</div>
-
-<!-- Main -->
-<div class="main">
-
-    <div class="navbar">
-        <h3>Inventory Dashboard</h3>
+    <div id="app">
+        <!-- Navigation will be injected here -->
     </div>
-
-    <div id="content-area">
-        <!-- Default load -->
-    </div>
-
-</div>
-
-<script>
-function loadPage(page) {
-    fetch("/" + page)
-    .then(res => res.text())
-    .then(data => {
-        document.getElementById("content-area").innerHTML = data;
-    });
-}
-
-// Load dashboard by default
-window.onload = function() {
-    loadPage('dashboard');
-}
-</script>
-
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
