@@ -55,6 +55,7 @@ def init_db():
     
     conn.commit()
     conn.close()
+    print("✅ Database ready!")
 
 init_db()
 
@@ -64,46 +65,52 @@ def home():
 
 @app.route('/register', methods=['POST'])
 def register():
-    data = request.json
-    username = data['username']
+    data = request.get_json()
+    username = data.get('username', '').strip()
     password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     
     conn = get_db()
     try:
         conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
         conn.commit()
-        return jsonify({'message': 'Registered successfully'})
-    except:
-        return jsonify({'error': 'Username exists'}), 400
+        return jsonify({'message': 'Registered! Please login.'})
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'Username already exists'}), 400
     finally:
         conn.close()
 
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.json
+    data = request.get_json()
+    username = data.get('username', '').strip()
+    password = data['password']
+    
     conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (data['username'],)).fetchone()
+    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     conn.close()
     
-    if user and bcrypt.check_password_hash(user['password'], data['password']):
-        token = create_access_token(identity=user['id'])
-        return jsonify({'token': token, 'username': data['username']})
-    return jsonify({'error': 'Invalid credentials'}), 401
+    if user and bcrypt.check_password_hash(user['password'], password):
+        token = create_access_token(identity={'id': user['id'], 'username': username})
+        return jsonify({'token': token, 'username': username})
+    return jsonify({'error': 'Invalid username or password'}), 401
 
 @app.route('/api/items')
-@jwt_required()
+@jwt_required(locations=["headers", "cookies", "json"])
 def get_items():
     conn = get_db()
-    items = conn.execute('SELECT * FROM items').fetchall()
+    items = conn.execute('SELECT * FROM items ORDER BY name').fetchall()
     conn.close()
     return jsonify([dict(item) for item in items])
 
 @app.route('/api/receive', methods=['POST'])
-@jwt_required()
+@jwt_required(locations=["headers", "cookies", "json"])
 def receive():
-    data = request.json
-    item_name = data['item']
-    qty = int(data['quantity'])
+    data = request.get_json()
+    item_name = data.get('item', '').strip()
+    qty = int(data.get('quantity', 0))
+    
+    if not item_name or qty <= 0:
+        return jsonify({'error': 'Invalid item or quantity'}), 400
     
     conn = get_db()
     conn.execute('UPDATE items SET quantity = quantity + ? WHERE name = ?', (qty, item_name))
@@ -112,21 +119,24 @@ def receive():
     conn.commit()
     conn.close()
     
-    return jsonify({'message': f'Received {qty} {item_name}'})
+    return jsonify({'message': f'Successfully received {qty} {item_name}'})
 
 @app.route('/api/issue', methods=['POST'])
-@jwt_required()
+@jwt_required(locations=["headers", "cookies", "json"])
 def issue():
-    data = request.json
-    item_name = data['item']
-    qty = int(data['quantity'])
+    data = request.get_json()
+    item_name = data.get('item', '').strip()
+    qty = int(data.get('quantity', 0))
+    
+    if not item_name or qty <= 0:
+        return jsonify({'error': 'Invalid item or quantity'}), 400
     
     conn = get_db()
     item = conn.execute('SELECT quantity FROM items WHERE name = ?', (item_name,)).fetchone()
     
-    if item['quantity'] < qty:
+    if not item or item['quantity'] < qty:
         conn.close()
-        return jsonify({'error': 'Insufficient stock'}), 400
+        return jsonify({'error': f'Not enough stock. Available: {item["quantity"] if item else 0}'}), 400
     
     conn.execute('UPDATE items SET quantity = quantity - ? WHERE name = ?', (qty, item_name))
     conn.execute('INSERT INTO transactions (item_name, quantity, type, date) VALUES (?, ?, "ISSUE", ?)', 
@@ -134,10 +144,10 @@ def issue():
     conn.commit()
     conn.close()
     
-    return jsonify({'message': f'Issued {qty} {item_name}'})
+    return jsonify({'message': f'Successfully issued {qty} {item_name}'})
 
 @app.route('/api/history')
-@jwt_required()
+@jwt_required(locations=["headers", "cookies", "json"])
 def history():
     conn = get_db()
     trans = conn.execute('SELECT * FROM transactions ORDER BY date DESC LIMIT 50').fetchall()
@@ -145,10 +155,14 @@ def history():
     return jsonify([dict(t) for t in trans])
 
 @app.route('/dashboard')
-@jwt_required()
+@jwt_required(locations=["headers", "cookies", "json"])
 def dashboard():
     return render_template('dashboard.html')
 
+@app.route('/health')
+def health():
+    return jsonify({'status': 'OK'})
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)
