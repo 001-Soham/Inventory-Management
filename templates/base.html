@@ -1,1 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MAVERIX</title>
 
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>MAVERIX</h2>
+
+    <a href="/dashboard" target="_blank"><i class="ri-dashboard-line"></i> Dashboard</a>
+    <a href="/receive" target="_blank"><i class="ri-inbox-line"></i> Receive</a>
+    <a href="/issue" target="_blank"><i class="ri-upload-line"></i> Issue</a>
+    <a href="/stock" target="_blank"><i class="ri-stack-line"></i> Stock</a>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+    <div class="navbar">
+        <h3>Inventory Dashboard</h3>
+        <div class="user">👤 Admin</div>
+    </div>
+
+    {% block content %}{% endblock %}
+
+</div>
+
+</body>
+</html>
