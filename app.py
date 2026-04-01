@@ -5,18 +5,21 @@ from flask_cors import CORS
 from datetime import datetime
 import sqlite3
 import os
-import hashlib
-import json
+import uuid
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-change-this-in-production'
-app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-change-this'
+
+# Render environment variables
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key-change-in-production')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'fallback-jwt-secret-key')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 CORS(app)
 
-# Database file
-DB_FILE = 'inventory.db'
+# Database file - Render persistent storage
+DB_FILE = os.environ.get('DATABASE_URL', 'inventory.db').replace('postgres://', '')
 
 # Predefined items
 PREDEFINED_ITEMS = [
@@ -27,12 +30,17 @@ PREDEFINED_ITEMS = [
     "Mobile Phone Stand", "Cable HDMI 2m"
 ]
 
+def get_db_connection():
+    """Get database connection with proper configuration for Render"""
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
+
 def init_db():
     """Initialize database and create tables"""
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Users table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +50,6 @@ def init_db():
         )
     ''')
     
-    # Inventory items table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS inventory_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +59,6 @@ def init_db():
         )
     ''')
     
-    # Transactions table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +73,7 @@ def init_db():
         )
     ''')
     
-    # Add predefined items if they don't exist
+    # Add predefined items
     for item_name in PREDEFINED_ITEMS:
         cursor.execute('SELECT id FROM inventory_items WHERE name = ?', (item_name,))
         if not cursor.fetchone():
@@ -75,17 +81,13 @@ def init_db():
     
     conn.commit()
     conn.close()
+    print("✅ Database initialized successfully!")
 
-# Initialize database on startup
-init_db()
+# Initialize on startup
+with app.app_context():
+    init_db()
 
-def get_db_connection():
-    """Get database connection"""
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row  # This enables column access by name
-    return conn
-
-# Routes
+# Routes (same as before but with Render optimizations)
 @app.route('/')
 def index():
     return render_template('login.html')
@@ -94,25 +96,27 @@ def index():
 def register():
     if request.method == 'POST':
         data = request.get_json()
-        username = data['username']
+        username = data['username'].strip()
         password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Check if user exists
-        cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
-        if cursor.fetchone():
+        try:
+            cursor.execute('SELECT id FROM users WHERE username = ?', (username,))
+            if cursor.fetchone():
+                conn.close()
+                return jsonify({'error': 'Username already exists'}), 400
+            
+            cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', 
+                          (username, password))
+            conn.commit()
             conn.close()
-            return jsonify({'error': 'Username already exists'}), 400
-        
-        # Insert new user
-        cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', 
-                      (username, password))
-        conn.commit()
-        conn.close()
-        
-        return jsonify({'message': 'User registered successfully'})
+            
+            return jsonify({'message': 'User registered successfully'})
+        except Exception as e:
+            conn.close()
+            return jsonify({'error': 'Registration failed'}), 500
     
     return render_template('register.html')
 
@@ -120,7 +124,7 @@ def register():
 def login():
     if request.method == 'POST':
         data = request.get_json()
-        username = data['username']
+        username = data['username'].strip()
         password = data['password']
         
         conn = get_db_connection()
@@ -148,21 +152,19 @@ def get_predefined_items():
     conn = get_db_connection()
     items = conn.execute('SELECT id, name, quantity FROM inventory_items ORDER BY name').fetchall()
     conn.close()
-    
     return jsonify([dict(item) for item in items])
 
 @app.route('/api/receive', methods=['POST'])
 @jwt_required()
 def receive_item():
     data = request.get_json()
-    item_id = data['item_id']
-    quantity = data['quantity']
-    unit_price = data.get('unit_price', 0)
+    item_id = int(data['item_id'])
+    quantity = int(data['quantity'])
+    unit_price = float(data.get('unit_price', 0))
     
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Check if item exists
     cursor.execute('SELECT id, name, quantity FROM inventory_items WHERE id = ?', (item_id,))
     item = cursor.fetchone()
     
@@ -170,15 +172,10 @@ def receive_item():
         conn.close()
         return jsonify({'error': 'Item not found'}), 404
     
-    # Update inventory
     new_quantity = item['quantity'] + quantity
-    cursor.execute('''
-        UPDATE inventory_items 
-        SET quantity = ? 
-        WHERE id = ?
-    ''', (new_quantity, item_id))
+    cursor.execute('UPDATE inventory_items SET quantity = ? WHERE id = ?', 
+                  (new_quantity, item_id))
     
-    # Add transaction
     cursor.execute('''
         INSERT INTO transactions (item_id, item_name, quantity, type, unit_price, total_amount, user_id)
         VALUES (?, ?, ?, 'receive', ?, ?, ?)
@@ -189,25 +186,19 @@ def receive_item():
     
     return jsonify({
         'message': 'Item received successfully',
-        'current_quantity': new_quantity,
-        'transaction': {
-            'item_name': item['name'],
-            'quantity': quantity,
-            'type': 'receive'
-        }
+        'current_quantity': new_quantity
     })
 
 @app.route('/api/issue', methods=['POST'])
 @jwt_required()
 def issue_item():
     data = request.get_json()
-    item_id = data['item_id']
-    quantity = data['quantity']
+    item_id = int(data['item_id'])
+    quantity = int(data['quantity'])
     
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Check if item exists and has enough quantity
     cursor.execute('SELECT id, name, quantity FROM inventory_items WHERE id = ?', (item_id,))
     item = cursor.fetchone()
     
@@ -217,33 +208,21 @@ def issue_item():
     
     if item['quantity'] < quantity:
         conn.close()
-        return jsonify({'error': 'Insufficient quantity'}), 400
+        return jsonify({'error': f'Insufficient quantity. Available: {item["quantity"]}'}), 400
     
-    # Update inventory
     new_quantity = item['quantity'] - quantity
-    cursor.execute('''
-        UPDATE inventory_items 
-        SET quantity = ? 
-        WHERE id = ?
-    ''', (new_quantity, item_id))
+    cursor.execute('UPDATE inventory_items SET quantity = ? WHERE id = ?', 
+                  (new_quantity, item_id))
     
-    # Add transaction
-    cursor.execute('''
-        INSERT INTO transactions (item_id, item_name, quantity, type, user_id)
-        VALUES (?, ?, ?, 'issue', ?)
-    ''', (item_id, item['name'], quantity, get_jwt_identity()))
+    cursor.execute('INSERT INTO transactions (item_id, item_name, quantity, type, user_id) VALUES (?, ?, ?, "issue", ?)',
+                  (item_id, item['name'], quantity, get_jwt_identity()))
     
     conn.commit()
     conn.close()
     
     return jsonify({
         'message': 'Item issued successfully',
-        'current_quantity': new_quantity,
-        'transaction': {
-            'item_name': item['name'],
-            'quantity': quantity,
-            'type': 'issue'
-        }
+        'current_quantity': new_quantity
     })
 
 @app.route('/api/transactions')
@@ -252,23 +231,14 @@ def get_transactions():
     conn = get_db_connection()
     transactions = conn.execute('''
         SELECT id, item_name, quantity, type, unit_price, total_amount, date 
-        FROM transactions 
-        ORDER BY date DESC
-        LIMIT 100
+        FROM transactions ORDER BY date DESC LIMIT 100
     ''').fetchall()
     conn.close()
     
-    result = []
-    for t in transactions:
-        result.append({
-            'id': t['id'],
-            'item_name': t['item_name'],
-            'quantity': t['quantity'],
-            'type': t['type'],
-            'unit_price': t['unit_price'] or 0,
-            'total_amount': t['total_amount'] or 0,
-            'date': t['date']
-        })
+    result = [{'id': t['id'], 'item_name': t['item_name'], 'quantity': t['quantity'], 
+              'type': t['type'], 'unit_price': t['unit_price'] or 0, 
+              'total_amount': t['total_amount'] or 0, 'date': t['date']} 
+              for t in transactions]
     
     return jsonify(result)
 
@@ -277,5 +247,11 @@ def get_transactions():
 def dashboard():
     return render_template('dashboard.html')
 
+# Health check for Render
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
