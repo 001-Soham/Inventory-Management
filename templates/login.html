@@ -1,79 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login</title>
+    <title>Login - Inventory</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5; }
-        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        input { width: 100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 4px; }
-        button { width: 100%; padding: 0.8rem; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .error { color: #e74c3c; margin-top: 1rem; }
-        a { color: #3498db; text-decoration: none; }
+        body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; margin-bottom: 1.5rem; color: #333; }
+        input { width: 100%; padding: 12px; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        button:hover:not(:disabled) { background: #218838; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .error { color: #dc3545; margin-top: 1rem; padding: 10px; background: #f8d7da; border-radius: 4px; text-align: center; display: none; }
+        .switch { text-align: center; margin-top: 1rem; }
+        .switch a { color: #007bff; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>Login</h2>
-        <input id="username" placeholder="Username" type="text">
-        <input id="password" placeholder="Password" type="password">
-        <button onclick="login()">Login</button>
+        <h2 id="title">Login</h2>
+        <input id="username" placeholder="Username" type="text" required>
+        <input id="password" placeholder="Password" type="password" required>
+        <button id="submitBtn" onclick="auth()">Login</button>
         <div id="error" class="error"></div>
-        <p>Don't have account? <a href="#" onclick="showRegister()">Register</a></p>
+        <div class="switch">
+            <a href="#" onclick="toggleForm()">Don't have account? Register</a>
+        </div>
     </div>
 
     <script>
-        let isRegister = false;
+        let isLogin = true;
         
-        async function login() {
-            const username = document.getElementById('username').value;
+        async function auth() {
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
+            const btn = document.getElementById('submitBtn');
             
-            const res = await fetch('/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username, password})
-            }).then(r => r.json());
+            if (!username || !password) return;
             
-            if (res.token) {
-                localStorage.setItem('token', res.token);
-                window.location.href = '/dashboard';
-            } else {
-                document.getElementById('error').textContent = res.error;
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            document.getElementById('error').style.display = 'none';
+            
+            try {
+                const url = isLogin ? '/login' : '/register';
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    document.getElementById('error').textContent = data.error || 'Error occurred';
+                    document.getElementById('error').style.display = 'block';
+                }
+            } catch (e) {
+                document.getElementById('error').textContent = 'Network error';
+                document.getElementById('error').style.display = 'block';
             }
+            
+            btn.disabled = false;
+            btn.textContent = isLogin ? 'Login' : 'Register';
         }
         
-        async function register() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            const res = await fetch('/register', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username, password})
-            }).then(r => r.json());
-            
-            if (res.message) {
-                alert('Registered! Please login.');
-                document.getElementById('error').textContent = '';
-            } else {
-                document.getElementById('error').textContent = res.error;
-            }
-        }
-        
-        function showRegister() {
-            isRegister = !isRegister;
-            document.querySelector('h2').textContent = isRegister ? 'Register' : 'Login';
-            document.querySelector('button').onclick = isRegister ? register : login;
-            document.querySelector('p').innerHTML = isRegister ? 
-                'Have account? <a href="#" onclick="showRegister()">Login</a>' : 
-                "Don't have account? <a href=\"#\" onclick=\"showRegister()\">Register</a>";
+        function toggleForm() {
+            isLogin = !isLogin;
+            document.getElementById('title').textContent = isLogin ? 'Login' : 'Register';
+            document.getElementById('submitBtn').textContent = isLogin ? 'Login' : 'Register';
         }
         
         document.addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                isRegister ? register() : login();
-            }
+            if (e.key === 'Enter') auth();
         });
     </script>
 </body>
