@@ -1,80 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login - Inventory</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { text-align: center; margin-bottom: 1.5rem; color: #333; }
-        input { width: 100%; padding: 12px; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
-        button:hover:not(:disabled) { background: #218838; }
-        button:disabled { background: #6c757d; cursor: not-allowed; }
-        .error { color: #dc3545; margin-top: 1rem; padding: 10px; background: #f8d7da; border-radius: 4px; text-align: center; display: none; }
-        .switch { text-align: center; margin-top: 1rem; }
-        .switch a { color: #007bff; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2 id="title">Login</h2>
-        <input id="username" placeholder="Username" type="text" required>
-        <input id="password" placeholder="Password" type="password" required>
-        <button id="submitBtn" onclick="auth()">Login</button>
-        <div id="error" class="error"></div>
-        <div class="switch">
-            <a href="#" onclick="toggleForm()">Don't have account? Register</a>
-        </div>
-    </div>
+{% extends "base.html" %}
+{% block content %}
 
-    <script>
-        let isLogin = true;
-        
-        async function auth() {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const btn = document.getElementById('submitBtn');
-            
-            if (!username || !password) return;
-            
-            btn.disabled = true;
-            btn.textContent = 'Loading...';
-            document.getElementById('error').style.display = 'none';
-            
-            try {
-                const url = isLogin ? '/login' : '/register';
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({username, password})
-                });
-                const data = await res.json();
-                
-                if (res.ok) {
-                    window.location.href = '/dashboard';
-                } else {
-                    document.getElementById('error').textContent = data.error || 'Error occurred';
-                    document.getElementById('error').style.display = 'block';
-                }
-            } catch (e) {
-                document.getElementById('error').textContent = 'Network error';
-                document.getElementById('error').style.display = 'block';
-            }
-            
-            btn.disabled = false;
-            btn.textContent = isLogin ? 'Login' : 'Register';
-        }
-        
-        function toggleForm() {
-            isLogin = !isLogin;
-            document.getElementById('title').textContent = isLogin ? 'Login' : 'Register';
-            document.getElementById('submitBtn').textContent = isLogin ? 'Login' : 'Register';
-        }
-        
-        document.addEventListener('keypress', e => {
-            if (e.key === 'Enter') auth();
-        });
-    </script>
-</body>
-</html>
+<div class="box">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <p onclick="goRegister()">Register</p>
+</div>
+
+<script src="/static/auth.js"></script>
+
+{% endblock %}
