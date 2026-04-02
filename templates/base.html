@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MAVERIX</title>
+    <title>Inventory System</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
 {% if session.get('user') %}
 <div class="nav">
-    <h2>MAVERIX</h2>
+    <h2>Inventory System</h2>
     <div>
         {{ session.get('user') }}
         <a href="/api/logout">Logout</a>
