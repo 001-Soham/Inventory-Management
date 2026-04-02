@@ -3,11 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.secret_key = "maverix_secret"
+app.secret_key = "super_secret_key_change_this"
 
-# SQLite DB (Render compatible)
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance/database.db')
+# Ensure instance folder exists
+if not os.path.exists("instance"):
+    os.makedirs("instance")
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -24,6 +26,10 @@ class Item(db.Model):
     name = db.Column(db.String(200))
     quantity = db.Column(db.Integer)
     user_id = db.Column(db.Integer)
+
+# ================= INIT DB =================
+with app.app_context():
+    db.create_all()
 
 # ================= ROUTES =================
 
@@ -51,26 +57,36 @@ def dashboard():
 
 @app.route("/api/register", methods=["POST"])
 def register():
-    data = request.json
+    data = request.get_json()
+
+    if not data or not data.get("username") or not data.get("password"):
+        return jsonify({"error": "Missing data"})
+
     if User.query.filter_by(username=data["username"]).first():
-        return jsonify({"error": "User exists"})
-    
+        return jsonify({"error": "User already exists"})
+
     user = User(username=data["username"], password=data["password"])
     db.session.add(user)
     db.session.commit()
-    return jsonify({"message": "Registered"})
+
+    return jsonify({"message": "Registered successfully"})
 
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.json
-    user = User.query.filter_by(username=data["username"], password=data["password"]).first()
-    
+    data = request.get_json()
+
+    user = User.query.filter_by(
+        username=data.get("username"),
+        password=data.get("password")
+    ).first()
+
     if not user:
         return jsonify({"error": "Invalid credentials"})
-    
+
     session["user"] = user.username
     session["user_id"] = user.id
-    return jsonify({"message": "Logged in"})
+
+    return jsonify({"message": "Login success"})
 
 @app.route("/api/logout")
 def logout():
@@ -83,31 +99,41 @@ def logout():
 def get_items():
     if "user_id" not in session:
         return jsonify([])
-    
+
     items = Item.query.filter_by(user_id=session["user_id"]).all()
-    return jsonify([{"id": i.id, "name": i.name, "quantity": i.quantity} for i in items])
+
+    return jsonify([
+        {"id": i.id, "name": i.name, "quantity": i.quantity}
+        for i in items
+    ])
 
 @app.route("/api/items", methods=["POST"])
 def add_item():
-    data = request.json
-    item = Item(name=data["name"], quantity=data["quantity"], user_id=session["user_id"])
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"})
+
+    data = request.get_json()
+
+    item = Item(
+        name=data["name"],
+        quantity=data["quantity"],
+        user_id=session["user_id"]
+    )
+
     db.session.add(item)
     db.session.commit()
-    return jsonify({"message": "Added"})
+
+    return jsonify({"message": "Item added"})
 
 @app.route("/api/items/<int:id>", methods=["DELETE"])
 def delete_item(id):
     item = Item.query.get(id)
+
     if item:
         db.session.delete(item)
         db.session.commit()
+
     return jsonify({"message": "Deleted"})
 
-# ================= INIT =================
-
 if __name__ == "__main__":
-    if not os.path.exists("instance"):
-        os.makedirs("instance")
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
