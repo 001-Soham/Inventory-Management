@@ -9,7 +9,7 @@ app.secret_key = "super_secret_key_change_this"
 if not os.path.exists("instance"):
     os.makedirs("instance")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
