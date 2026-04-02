@@ -1,171 +1,138 @@
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-import sqlite3
+import psycopg2
 import os
-from datetime import datetime
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'simple-session-key-2024')
-app.config['SESSION_TYPE'] = 'filesystem'
+app.secret_key = os.environ.get("SECRET_KEY", "secret")
 
 bcrypt = Bcrypt(app)
 CORS(app)
 
-DB_PATH = 'inventory.db'
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return psycopg2.connect(DATABASE_URL)
 
 def init_db():
     conn = get_db()
-    conn.execute('''CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
-    )''')
-    
-    conn.execute('''CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        quantity INTEGER DEFAULT 0
-    )''')
-    
-    conn.execute('''CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        item_name TEXT NOT NULL,
-        quantity INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        date TEXT NOT NULL,
-        username TEXT
-    )''')
-    
-    default_items = ["Laptop", "Mouse", "Keyboard", "Monitor", "Hard Drive", "RAM", "SSD", "Printer", "Router", "UPS"]
-    for item in default_items:
-        conn.execute('INSERT OR IGNORE INTO items (name) VALUES (?)', (item,))
-    
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE,
+        password TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS items (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE,
+        quantity INTEGER
+    )
+    """)
+
+    items = ["Laptop","Mouse","Keyboard","Monitor","SSD","RAM"]
+
+    for item in items:
+        cur.execute(
+            "INSERT INTO items (name, quantity) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+            (item, 10)
+        )
+
     conn.commit()
     conn.close()
 
 init_db()
 
+# ---------- ROUTES ----------
 @app.route('/')
 def home():
-    if session.get('logged_in'):
-        return redirect(url_for('dashboard'))
-    return render_template('login.html')
+    if "user" in session:
+        return redirect('/dashboard')
+    return redirect('/login')
 
-@app.route('/register', methods=['POST'])
-def register():
-    username = request.json.get('username', '').strip()
-    password = bcrypt.generate_password_hash(request.json['password']).decode('utf-8')
-    
-    conn = get_db()
-    try:
-        conn.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
-        conn.commit()
-        return jsonify({'message': 'Registered successfully!'})
-    except:
-        return jsonify({'error': 'Username already exists'}), 400
-    finally:
-        conn.close()
+@app.route('/login')
+def login_page():
+    return render_template("login.html", title="Login")
 
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.json.get('username', '').strip()
-    password = request.json['password']
-    
-    conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
-    
-    if user and bcrypt.check_password_hash(user['password'], password):
-        session['logged_in'] = True
-        session['username'] = username
-        return jsonify({'message': 'Login successful!', 'username': username})
-    return jsonify({'error': 'Invalid credentials'}), 401
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('home'))
-
-@app.route('/api/items')
-def get_items():
-    if not session.get('logged_in'):
-        return jsonify({'error': 'Please login first'}), 401
-    
-    conn = get_db()
-    items = conn.execute('SELECT * FROM items ORDER BY name').fetchall()
-    conn.close()
-    return jsonify([dict(item) for item in items])
-
-@app.route('/api/receive', methods=['POST'])
-def receive():
-    if not session.get('logged_in'):
-        return jsonify({'error': 'Please login first'}), 401
-    
-    data = request.json
-    item_name = data.get('item', '').strip()
-    qty = int(data.get('quantity', 0))
-    
-    if not item_name or qty <= 0:
-        return jsonify({'error': 'Invalid data'}), 400
-    
-    conn = get_db()
-    conn.execute('UPDATE items SET quantity = quantity + ? WHERE name = ?', (qty, item_name))
-    conn.execute('INSERT INTO transactions (item_name, quantity, type, date, username) VALUES (?, ?, "RECEIVE", ?, ?)', 
-                (item_name, qty, datetime.now().isoformat(), session['username']))
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'message': f'Received {qty} {item_name} ✅'})
-
-@app.route('/api/issue', methods=['POST'])
-def issue():
-    if not session.get('logged_in'):
-        return jsonify({'error': 'Please login first'}), 401
-    
-    data = request.json
-    item_name = data.get('item', '').strip()
-    qty = int(data.get('quantity', 0))
-    
-    if not item_name or qty <= 0:
-        return jsonify({'error': 'Invalid data'}), 400
-    
-    conn = get_db()
-    item = conn.execute('SELECT quantity FROM items WHERE name = ?', (item_name,)).fetchone()
-    
-    if not item or item['quantity'] < qty:
-        conn.close()
-        return jsonify({'error': f'Not enough stock (Available: {item["quantity"] if item else 0})'}), 400
-    
-    conn.execute('UPDATE items SET quantity = quantity - ? WHERE name = ?', (qty, item_name))
-    conn.execute('INSERT INTO transactions (item_name, quantity, type, date, username) VALUES (?, ?, "ISSUE", ?, ?)', 
-                (item_name, qty, datetime.now().isoformat(), session['username']))
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'message': f'Issued {qty} {item_name} ✅'})
-
-@app.route('/api/history')
-def history():
-    if not session.get('logged_in'):
-        return jsonify({'error': 'Please login first'}), 401
-    
-    conn = get_db()
-    trans = conn.execute('SELECT * FROM transactions ORDER BY date DESC LIMIT 50').fetchall()
-    conn.close()
-    return jsonify([dict(t) for t in trans])
+@app.route('/register')
+def register_page():
+    return render_template("register.html", title="Register")
 
 @app.route('/dashboard')
 def dashboard():
-    if not session.get('logged_in'):
-        return redirect(url_for('home'))
-    return render_template('dashboard.html')
+    if "user" not in session:
+        return redirect('/login')
+    return render_template("dashboard.html", title="Dashboard")
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+# ---------- AUTH ----------
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data['username']
+    password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "Registered"})
+    except:
+        return jsonify({"message": "User exists"}), 400
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data['username']
+    password = data['password']
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
+    user = cur.fetchone()
+    conn.close()
+
+    if user and bcrypt.check_password_hash(user[2], password):
+        session['user'] = username
+        return jsonify({"message": "Login success"})
+
+    return jsonify({"message": "Invalid"}), 401
+
+@app.route('/api/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+# ---------- INVENTORY ----------
+@app.route('/api/items')
+def get_items():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT name, quantity FROM items")
+    data = [{"name": r[0], "quantity": r[1]} for r in cur.fetchall()]
+    conn.close()
+    return jsonify(data)
+
+@app.route('/api/update', methods=['POST'])
+def update():
+    data = request.json
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute(
+        "UPDATE items SET quantity = quantity + %s WHERE name=%s",
+        (data['change'], data['name'])
+    )
+
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Updated"})
+
+if __name__ == "__main__":
+    app.run()
