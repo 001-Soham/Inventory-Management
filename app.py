@@ -1,138 +1,113 @@
-from flask import Flask, render_template, request, jsonify, session, redirect
-from flask_bcrypt import Bcrypt
-from flask_cors import CORS
-import psycopg2
+from flask import Flask, render_template, request, redirect, session, jsonify
+from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "secret")
+app.secret_key = "maverix_secret"
 
-bcrypt = Bcrypt(app)
-CORS(app)
+# SQLite DB (Render compatible)
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance/database.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+db = SQLAlchemy(app)
 
-def get_db():
-    return psycopg2.connect(DATABASE_URL)
+# ================= MODELS =================
 
-def init_db():
-    conn = get_db()
-    cur = conn.cursor()
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE,
-        password TEXT
-    )
-    """)
+class Item(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200))
+    quantity = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS items (
-        id SERIAL PRIMARY KEY,
-        name TEXT UNIQUE,
-        quantity INTEGER
-    )
-    """)
+# ================= ROUTES =================
 
-    items = ["Laptop","Mouse","Keyboard","Monitor","SSD","RAM"]
-
-    for item in items:
-        cur.execute(
-            "INSERT INTO items (name, quantity) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-            (item, 10)
-        )
-
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# ---------- ROUTES ----------
-@app.route('/')
+@app.route("/")
 def home():
     if "user" in session:
-        return redirect('/dashboard')
-    return redirect('/login')
+        return redirect("/dashboard")
+    return redirect("/login")
 
-@app.route('/login')
+@app.route("/login")
 def login_page():
-    return render_template("login.html", title="Login")
+    return render_template("login.html")
 
-@app.route('/register')
+@app.route("/register")
 def register_page():
-    return render_template("register.html", title="Register")
+    return render_template("register.html")
 
-@app.route('/dashboard')
+@app.route("/dashboard")
 def dashboard():
     if "user" not in session:
-        return redirect('/login')
-    return render_template("dashboard.html", title="Dashboard")
+        return redirect("/login")
+    return render_template("dashboard.html")
 
-# ---------- AUTH ----------
-@app.route('/api/register', methods=['POST'])
+# ================= AUTH =================
+
+@app.route("/api/register", methods=["POST"])
 def register():
     data = request.json
-    username = data['username']
-    password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+    if User.query.filter_by(username=data["username"]).first():
+        return jsonify({"error": "User exists"})
+    
+    user = User(username=data["username"], password=data["password"])
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({"message": "Registered"})
 
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
-        conn.commit()
-        conn.close()
-        return jsonify({"message": "Registered"})
-    except:
-        return jsonify({"message": "User exists"}), 400
-
-@app.route('/api/login', methods=['POST'])
+@app.route("/api/login", methods=["POST"])
 def login():
     data = request.json
-    username = data['username']
-    password = data['password']
+    user = User.query.filter_by(username=data["username"], password=data["password"]).first()
+    
+    if not user:
+        return jsonify({"error": "Invalid credentials"})
+    
+    session["user"] = user.username
+    session["user_id"] = user.id
+    return jsonify({"message": "Logged in"})
 
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
-    user = cur.fetchone()
-    conn.close()
-
-    if user and bcrypt.check_password_hash(user[2], password):
-        session['user'] = username
-        return jsonify({"message": "Login success"})
-
-    return jsonify({"message": "Invalid"}), 401
-
-@app.route('/api/logout')
+@app.route("/api/logout")
 def logout():
     session.clear()
-    return redirect('/login')
+    return redirect("/login")
 
-# ---------- INVENTORY ----------
-@app.route('/api/items')
+# ================= INVENTORY =================
+
+@app.route("/api/items", methods=["GET"])
 def get_items():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT name, quantity FROM items")
-    data = [{"name": r[0], "quantity": r[1]} for r in cur.fetchall()]
-    conn.close()
-    return jsonify(data)
+    if "user_id" not in session:
+        return jsonify([])
+    
+    items = Item.query.filter_by(user_id=session["user_id"]).all()
+    return jsonify([{"id": i.id, "name": i.name, "quantity": i.quantity} for i in items])
 
-@app.route('/api/update', methods=['POST'])
-def update():
+@app.route("/api/items", methods=["POST"])
+def add_item():
     data = request.json
-    conn = get_db()
-    cur = conn.cursor()
+    item = Item(name=data["name"], quantity=data["quantity"], user_id=session["user_id"])
+    db.session.add(item)
+    db.session.commit()
+    return jsonify({"message": "Added"})
 
-    cur.execute(
-        "UPDATE items SET quantity = quantity + %s WHERE name=%s",
-        (data['change'], data['name'])
-    )
+@app.route("/api/items/<int:id>", methods=["DELETE"])
+def delete_item(id):
+    item = Item.query.get(id)
+    if item:
+        db.session.delete(item)
+        db.session.commit()
+    return jsonify({"message": "Deleted"})
 
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Updated"})
+# ================= INIT =================
 
 if __name__ == "__main__":
-    app.run()
+    if not os.path.exists("instance"):
+        os.makedirs("instance")
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)
