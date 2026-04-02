@@ -1,40 +1,83 @@
 body {
-    font-family: Arial;
+    margin: 0;
+    font-family: 'Inter', sans-serif;
     background: #0f172a;
-    color: white;
-    text-align: center;
+    color: #fff;
 }
 
-.nav {
+/* Layout */
+.layout {
     display: flex;
-    justify-content: space-between;
-    padding: 15px;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 220px;
+    height: 100vh;
     background: #020617;
+    padding: 20px;
 }
 
-.box {
-    margin-top: 100px;
+.sidebar h2 {
+    color: #38bdf8;
 }
 
-input {
+.sidebar a {
     display: block;
-    margin: 10px auto;
-    padding: 10px;
-}
-
-button {
-    padding: 10px 20px;
-    background: #38bdf8;
-    border: none;
+    margin: 15px 0;
+    color: #cbd5f5;
+    text-decoration: none;
     cursor: pointer;
 }
 
-.dashboard {
-    margin-top: 50px;
+.sidebar a:hover {
+    color: #38bdf8;
 }
 
-.item {
+/* Main */
+.main {
+    flex: 1;
+    padding: 30px;
+}
+
+/* Cards */
+.card {
     background: #1e293b;
-    margin: 10px;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+/* Inputs */
+input {
     padding: 10px;
+    margin: 8px 0;
+    width: 100%;
+    border: none;
+    border-radius: 6px;
+}
+
+/* Buttons */
+button {
+    padding: 10px 15px;
+    background: #38bdf8;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: black;
+}
+
+button:hover {
+    background: #0ea5e9;
+}
+
+/* Table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td, th {
+    padding: 10px;
+    border-bottom: 1px solid #334155;
 }
