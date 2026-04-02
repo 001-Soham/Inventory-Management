@@ -1,16 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Management System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>MAVERIX</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div id="app">
-        <!-- Navigation will be injected here -->
+
+{% if session.get('user') %}
+<div class="nav">
+    <h2>MAVERIX</h2>
+    <div>
+        {{ session.get('user') }}
+        <a href="/api/logout">Logout</a>
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</div>
+{% endif %}
+
+{% block content %}{% endblock %}
+
 </body>
 </html>
